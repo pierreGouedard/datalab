@@ -1,0 +1,19 @@
+.ipynb_checkpoints/
+__pycache__/
+.idea/
+.mypy_cache/
+.pytest_cache/
+
+# ignore all local configuration and sensitive credentials files
+conf/local/**
+conf/**/*credentials*
+
+# Ignore any local filesystem data
+data/*
+
+# Other
+*.egg-info/
+sql/
+ca.pem
+coverage.xml
+.coverage
