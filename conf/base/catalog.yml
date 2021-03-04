@@ -1,0 +1,22 @@
+# Data Catalog
+
+# HIGGS CHALLENGE
+higgs_train_raw_data:
+  type: pandas.CSVDataSet
+  filepath: data/higgs/raw/train.csv
+
+higgs_test_raw_data:
+  type: pandas.CSVDataSet
+  filepath: data/higgs/raw/test.csv
+
+higgs_train_transformed_data:
+  type: pandas.CSVDataSet
+  filepath: data/higgs/feature/train.csv
+
+higgs_test_transformed_data:
+  type: pandas.CSVDataSet
+  filepath: data/higgs/feature/test.csv
+
+higgs_weight_data:
+  type: pandas.CSVDataSet
+  filepath: data/higgs/feature/weights.csv

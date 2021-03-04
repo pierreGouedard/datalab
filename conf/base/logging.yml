@@ -1,0 +1,39 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+    simple:
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        datefmt: "%Y-%m-%d %H:%M:%S %Z"
+    json_formatter:
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        class: pythonjsonlogger.jsonlogger.JsonFormatter
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: INFO
+        formatter: simple
+        stream: ext://sys.stdout
+
+loggers:
+    anyconfig:
+        level: WARNING
+        datefmt: "%Y/%m/%d %H:%M:%S %Z"
+        handlers: [console]
+        propagate: no
+
+    kedro.io:
+        level: INFO
+        handlers: [console]
+        datefmt: "%Y/%m/%d %H:%M:%S %Z"
+        propagate: no
+
+    kedro.pipeline:
+        level: INFO
+        datefmt: "%Y/%m/%d %H:%M:%S %Z"
+        handlers: [console]
+        propagate: no
+
+root:
+    level: INFO
+    handlers: [console]
