@@ -22,6 +22,10 @@ def create_transform_pipeline() -> Pipeline:
                 inputs={
                     "df_raw_train": "higgs_train_raw_data",
                     "df_raw_test": "higgs_test_raw_data",
+                    "index_col": "params:index_col",
+                    "weight_col": "params:weight_col",
+                    "l_cat_cols": "params:cat_col",
+                    "l_num_cols": "params:num_col"
                 },
                 outputs=["higgs_train_transformed_data", "higgs_test_transformed_data", "higgs_weight_data"],
                 name="transform_higgs_data",

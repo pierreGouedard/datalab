@@ -1,76 +1,106 @@
 # Global import
 import os
+from numpy import nan
 import pandas as pd
-
-# Declare input and outputs
-
-parameters = {
-    'index': 'EventId',
-    'features': [
-        'DER_mass_MMC', 'DER_mass_transverse_met_lep', 'DER_mass_vis', 'DER_pt_h', 'DER_deltaeta_jet_jet',
-        'DER_mass_jet_jet', 'DER_prodeta_jet_jet', 'DER_deltar_tau_lep', 'DER_pt_tot', 'DER_sum_pt',
-        'DER_pt_ratio_lep_tau', 'DER_met_phi_centrality', 'DER_lep_eta_centrality', 'PRI_tau_pt', 'PRI_tau_pt',
-        'PRI_tau_eta', 'PRI_tau_phi', 'PRI_lep_pt', 'PRI_lep_eta', 'PRI_lep_phi', 'PRI_met', 'PRI_met_phi',
-        'PRI_met_sumet', 'PRI_jet_num', 'PRI_jet_leading_pt', 'PRI_jet_leading_eta', 'PRI_jet_leading_phi',
-        'PRI_jet_subleading_pt', 'PRI_jet_subleading_eta', 'PRI_jet_subleading_phi', 'PRI_jet_all_pt'
-    ],
-    'weights': ['Weight'],
-    'cat': ['PRI_jet_num'],
-    'target': ['Label'],
-    'cols_out': [
-        'DER_mass_MMC', 'DER_mass_transverse_met_lep', 'DER_mass_vis', 'DER_pt_h', 'DER_deltaeta_jet_jet',
-        'DER_mass_jet_jet', 'DER_prodeta_jet_jet', 'DER_deltar_tau_lep', 'DER_pt_tot', 'DER_sum_pt',
-        'DER_pt_ratio_lep_tau', 'DER_met_phi_centrality', 'PRI_tau_pt', 'PRI_tau_pt', 'PRI_tau_eta', 'PRI_tau_phi',
-        'PRI_lep_pt', 'PRI_lep_eta', 'PRI_lep_phi', 'PRI_met', 'PRI_met_phi', 'PRI_met_sumet', 'PRI_jet_leading_pt',
-        'PRI_jet_leading_eta', 'PRI_jet_subleading_eta', 'PRI_jet_all_pt', 'PRI_jet_num'
-    ]
-}
+from pandas import isna
+from sklearn.preprocessing import StandardScaler
+from typing import List, Tuple, Optional
 
 
-def tansform_raw_data(df_raw_train, df_raw_test):
+def tansform_raw_data(
+        df_raw_train: pd.DataFrame, df_raw_test: pd.DataFrame, index_col: str, weight_col:str, l_cat_cols: List[str],
+        l_num_cols: List[str]
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Transform raw data of the Kaggle Higgs dataset.
 
-    import IPython
-    IPython.embed()
+    The train dataset is used to standardized numerical features and filter columns based of covariance.
 
-    # Load and save dataset
-    l_cols = parameters['features'] + parameters['target']
+    Parameters
+    ----------
+    df_raw_train: DataFrame
+        Train raw data.
+    df_raw_test: DataFrame
+        Test raw data.
+    index_col: str
+        Name of the index column.
+    weight_col: str
+        Name of the weight column.
+    target_col: str
+        Name of the target columns
+    l_cat_cols: list
+        List of name of categorical columns
+    l_num_cols: list
+        List of name of categorical columns
 
-    # Prepare data
-    df_weights = df_train[parameters['weights']]
-    df_train, scaler = prepare_higgs_data(
-        df_train[parameters['features'] + parameters['target']],
-        l_col_cats=[parameters['cat']],
-        l_targets=parameters['target'],
+    Returns
+    -------
+    tuple
+        composed of processed train, test and weights data.
+
+    """
+    # Set index
+    df_raw_train, df_raw_test = df_raw_train.set_index(index_col), df_raw_test.set_index(index_col)
+
+    # Extract weights
+    df_weights = df_raw_train[[weight_col]]
+
+    # Process train raw data
+    df_train, scaler, l_filtered_num_cols = process_raw(
+        df_raw_train[l_cat_cols + l_num_cols],
+        l_col_cats=l_cat_cols,
+        l_num_cols=l_num_cols,
         missing_value=-999,
     )
-    df_test, _ = prepare_higgs_data(
-        df_test[parameters['features']],
-        l_col_cats=[parameters['cat']],
-        l_targets=parameters['target'],
+
+    # Process test raw data
+    df_test, _, _ = process_raw(
+        df_raw_test[l_cat_cols + l_num_cols],
+        l_col_cats=l_cat_cols,
+        l_num_cols=l_num_cols,
         missing_value=-999,
-        scaler=scaler
+        scaler=scaler,
+        l_filtered_num_cols=l_filtered_num_cols
     )
-
-    # minor fix (target name + col selection)
-    df_train.rename(columns={parameters['target'][0]: 'target'}, inplace=True)
-    df_train = df_train[parameters['cols_out'] + ['target']]
-    df_test = df_test[parameters['cols_out']]
-
-    # Save features
-    df_train.to_csv(os.path.join(outputs['train']['path'], outputs['train']['name']))
-    df_test.to_csv(os.path.join(outputs['test']['path'], outputs['test']['name']))
-    df_weights.to_csv(os.path.join(outputs['weights']['path'], outputs['weights']['name']))
 
     return df_train, df_test, df_weights
 
 
-def prepare_higgs_data(df, l_col_cats, l_targets, missing_value=None, scaler=None):
-    # TODO: remove automatically feature that are too correlated
+def process_raw(
+        df: pd.DataFrame, l_col_cats: List[str], l_num_cols: List[str], missing_value: int = None,
+        scaler: Optional[StandardScaler] = None, l_filtered_num_cols: Optional[List[str]] = None,
+        corr_thresh: Optional[float] = 0.95
+) -> Tuple[pd.DataFrame, StandardScaler, List[str]]:
+    """
+    Process DataFrame.
 
+    Build and fit model to standardize numerical columns if scaler not specified,  create list of filtered columns if
+    l_filtered_num_cols is not specified.
 
-    # get list of numerical features
-    l_num_features = sorted([c for c in df.columns if c not in l_col_cats + l_targets])
+    Parameters
+    ----------
+    df: DataFrame
+        DataFrame to process.
+    l_col_cats: list
+        list of categrical columns.
+    l_num_cols:
+        list of numerical columns.
+    missing_value: int
+        Value that take missing value in passed DataFrame.
+    scaler: StandardScaler
+        Optional standard scaler.
+    l_filtered_num_cols: list
+        Optional list of filtered numerical columns.
+    corr_thresh: float
+        Minimum value of correlation of columns with its predecessor up to which column is filtered out,
+        value in [0, 1].
 
+    Returns
+    -------
+    tuple
+        Process DataFrame, Scaler and list of filtered numerical columns.
+
+    """
     # Transform missing value into nan
     if missing_value is not None:
         df = df.replace(to_replace=missing_value, value=nan)
@@ -78,12 +108,23 @@ def prepare_higgs_data(df, l_col_cats, l_targets, missing_value=None, scaler=Non
     # Create scaler
     if scaler is None:
         scaler = StandardScaler()
-        ax_standardize = scaler.fit_transform(df[l_num_features])
+        ax_standardize = scaler.fit_transform(df[l_num_cols])
 
     else:
-        ax_standardize = scaler.transform(df[l_num_features])
+        ax_standardize = scaler.transform(df[l_num_cols])
 
     # Fit scaler and standardized numerical features
-    df = df.assign(**{c: ax_standardize[:, i] for i, c in enumerate(l_num_features)})
+    df = df.assign(**{c: ax_standardize[:, i] for i, c in enumerate(l_num_cols)})
 
-    return df, scaler
+    # Remove too correlated features
+    if l_filtered_num_cols is not None:
+        df_corr = df[l_num_cols].corr()
+        l_filtered_num_cols = [df_corr.index[0]]
+        for i in range(1, df_corr.shape[0] + 1):
+            if (df_corr.iloc[28].abs() > corr_thresh).iloc[:i].sum() == 0:
+                l_filtered_num_cols.append(df_corr.index[0])
+
+    # Filter cols of
+    df = df[l_col_cats + l_num_cols]
+
+    return df, scaler, l_filtered_num_cols
