@@ -1,7 +1,7 @@
 # Parameters Catalog
 
-
 # HIGGS CHALLENGE
+# General
 index_col: EventId
 weight_col: Weight
 target_col: Label
@@ -37,3 +37,85 @@ num_col:
   - PRI_jet_subleading_eta
   - PRI_jet_subleading_phi
   - PRI_jet_all_pt
+
+# Feature transform param
+param_transform:
+  sparse: False
+  dtype: int
+  feature_method: cat_encode
+  target_method: target_transform
+
+param_transform_grid:
+
+# Selection param (CV / test / val)
+param_fold:
+  nb_folds: 0
+  method: standard
+  test_size: 0.05
+  val_size: 0.05
+
+# Random forest params
+rf_param:
+  n_jobs: 2
+  min_samples_split': 100
+  max_depth: 5
+  n_estimators: 200
+
+rf_param_grid:
+  min_samples_leaf:
+    - 50
+    - 100
+    - 500
+    - 1000
+  max_depth:
+    - 3
+    - 5
+    - 10
+  n_estimators:
+    - 100
+    - 250
+    - 500
+
+# XGBOOST params: eta: learning rate, gamma: min reduction loss to split, subsample: p dataset sampled,
+# colsample_bytree: p col sampling, lambda: L2 reg coef, alpha: L1 reg coef
+xgb_param:
+  nthread: 2
+  n_jobs: 2
+  objective: binary:logistic
+  colsample_bytree': 0.8
+  subsample': 0.8
+  eta: 0.1
+  max_depth: 10
+  alpha: 0
+  lambda: 0
+  min_child_leaf: 100
+  gamma: 1
+  n_estimators: 100
+
+xgb_param_grid:
+  colsample_bytree:
+    - 0.5
+    - 0.8
+    - 1
+  subsample:
+    - 0.5
+    - 0.8
+    - 1
+  eta:
+    - 0.05
+    - 0.1
+    - 0.2
+  max_depth:
+    - 3
+    - 5
+    - 10
+  lambda:
+    - 0.01
+    - 0.1
+    - 0.5
+  n_estimators:
+    - 100
+    - 300
+    - 600
+
+# DL params

@@ -233,6 +233,7 @@ class DataTransformer(object):
     def get_args(self):
         return {k: v for k, v in self.args.items()}
 
+    # TODO: no additional parameters here ! all should be passed in the constructor
     def build(self, df_data=None, params=None, force_train=False):
         """
         Build models from processed data and perform a numerical transform of label. The processed data is composed,

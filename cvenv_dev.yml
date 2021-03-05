@@ -38,4 +38,5 @@ dependencies:
     - kedro-viz==3.7.0
     - ddtrace==0.43.0
     - opentracing==2.3.0
+    - dill=0.3.3
 
