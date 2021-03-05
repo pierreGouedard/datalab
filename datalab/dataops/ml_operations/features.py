@@ -16,7 +16,7 @@ class FoldManager(object):
     allowed_methods = ['standard', 'stratified']
 
     def __init__(
-            self, df_data, attribute_transformer, nb_folds, df_weights=None, method='standard', test_size=0.1,
+            self, df_data, nb_folds, df_weights=None, method='standard', test_size=0.1,
             val_size=0.1, target_name='target'
     ):
 
@@ -33,7 +33,6 @@ class FoldManager(object):
             self.df_weights = df_weights
 
         # Set method to transform data
-        self.attribute_transformer = attribute_transformer
         self.data_transformer = None
 
         # Set sampling method for Kfold
@@ -73,8 +72,7 @@ class FoldManager(object):
         """
         # Create models builder if necessary
         if self.data_transformer is None or force_recompute:
-            self.data_transformer = DataTransformer(**self.attribute_transformer)\
-                .build(self.df_train, param_transform)
+            self.data_transformer = DataTransformer(**param_transform).build(self.df_train)
 
         X, y = self.data_transformer.transform(self.df_train, target=True)
         d_train = {"X": X, "y": y}
@@ -103,8 +101,7 @@ class FoldManager(object):
 
         # Create models builder if necessary
         if self.data_transformer is None:
-            self.data_transformer = DataTransformer(**self.attribute_transformer)\
-                .build(self.df_train, param_transform)
+            self.data_transformer = DataTransformer(**param_transform).build(self.df_train)
 
         X, y = self.data_transformer.transform(self.df_val, target=True)
         d_eval = {"X": X, "y": y}
@@ -131,8 +128,7 @@ class FoldManager(object):
         """
         # Create models builder if necessary
         if self.data_transformer is None:
-            self.data_transformer = DataTransformer(**self.attribute_transformer)\
-                .build(self.df_train, param_transform)
+            self.data_transformer = DataTransformer(**param_transform).build(self.df_train)
 
         X, y = self.data_transformer.transform(self.df_test, target=True)
         d_test = {"X": X, "y": y}
@@ -182,8 +178,7 @@ class FoldManager(object):
                 index_train, index_val = list(self.df_train.index[l_train]), list(self.df_train.index[l_val])
 
                 # Create models  builder if necessary
-                self.data_transformer = DataTransformer(**self.attribute_transformer)\
-                    .build(self.df_train.loc[index_train], param_transform)
+                self.data_transformer = DataTransformer(**param_transform).build(self.df_train.loc[index_train])
 
                 # Get features
                 X, y = self.data_transformer.transform(self.df_train.loc[index_train + index_val], target=True)
@@ -212,7 +207,7 @@ class DataTransformer(object):
     """
 
     def __init__(
-            self, method=None, cat_cols=None, num_cols=None, target_name='target', target_transform=None, n_label=None,
+            self, feature_transform, cat_cols, num_cols, target_col, params, n_label, target_transform=None
     ):
         """
 
@@ -221,20 +216,18 @@ class DataTransformer(object):
         method : str
             Model to use to transform text data.
 
-        token_delimiter : str
-            Delimiter that is used to seperate token in text input.
         """
-        self.method, self.target_name, self.cat_cols, self.num_cols = method, target_name, cat_cols, num_cols
+        self.feature_transform, self.target_col, self.cat_cols, self.num_cols = feature_transform, target_col, cat_cols, num_cols
         self.n_label = n_label
-        self.target_transform = target_transform
+        self.target_transform = target_transform,
+        self.params = params
         self.args = {}
         self.model, self.target_encoder, self.is_built = None, None, None
 
     def get_args(self):
         return {k: v for k, v in self.args.items()}
 
-    # TODO: no additional parameters here ! all should be passed in the constructor
-    def build(self, df_data=None, params=None, force_train=False):
+    def build(self, df_data=None, force_train=False):
         """
         Build models from processed data and perform a numerical transform of label. The processed data is composed,
         on one hand, of text description, that will transform to numerical vector using TF-ID. On the other hand of a
@@ -256,17 +249,18 @@ class DataTransformer(object):
 
         if self.model is None or force_train:
 
-            if self.method == 'cat_encode':
+            if self.feature_transform == 'cat_encode':
                 self.model = CatEncoder(
-                    handle_unknown='ignore', sparse=params.get('sparse', False), dtype=params.get('dtype', bool)
+                    handle_unknown='ignore', sparse=self.params.get('sparse', False),
+                    dtype=self.params.get('dtype', bool)
                 )
                 self.model.fit(df_data[self.cat_cols])
 
             else:
-                raise ValueError('Method not implemented: {}'.format(self.method))
+                raise ValueError('Transformation not implemented: {}'.format(self.feature_transform))
 
             if self.target_transform in ('encoding', 'sparse_encoding'):
-                self.target_encoder = LabelEncoder().fit(df_data[self.target_name])
+                self.target_encoder = LabelEncoder().fit(df_data[self.target_col])
 
         self.is_built = True
 
@@ -295,19 +289,19 @@ class DataTransformer(object):
         if not self.is_built:
             raise ValueError("Transforming data requires building features.")
 
-        if self.method == 'cat_encode':
+        if self.feature_transform == 'cat_encode':
             X = self.model.transform(df_data[self.cat_cols])
-            X = np.hstack((X, df_data[[c for c in self.num_cols if c != self.target_name]]))
+            X = np.hstack((X, df_data[[c for c in self.num_cols if c != self.target_col]]))
 
         else:
-            X = df_data[[c for c in df_data.columns if c != self.target_name]].values
+            X = df_data[[c for c in df_data.columns if c != self.target_col]].values
 
         if target:
             if self.target_transform == 'encoding':
-                y = self.target_encoder.transform(df_data[self.target_name])
+                y = self.target_encoder.transform(df_data[self.target_col])
 
             elif self.target_transform == 'sparse_encoding':
-                y = self.target_encoder.transform(df_data[self.target_name])
+                y = self.target_encoder.transform(df_data[self.target_col])
 
                 if self.n_label > 1:
                     y = csc_matrix(([True] * y.shape[0], (range(y.shape[0]), y)), shape=(y.shape[0], len(np.unique(y))))
@@ -316,7 +310,7 @@ class DataTransformer(object):
                     y = csc_matrix(y[:, np.newaxis] > 0)
 
             else:
-                y = df_data.loc[:, [self.target_name]].values
+                y = df_data.loc[:, [self.target_col]].values
 
             return X, y
 

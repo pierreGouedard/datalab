@@ -40,10 +40,12 @@ num_col:
 
 # Feature transform param
 param_transform:
-  sparse: False
-  dtype: int
-  feature_method: cat_encode
-  target_method: target_transform
+  params:
+    sparse: False
+    dtype: int
+  feature_transform: cat_encode
+  target_transform: target_transform
+  n_label: 1
 
 param_transform_grid:
 
