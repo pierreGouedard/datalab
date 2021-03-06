@@ -5,6 +5,7 @@ from kedro.pipeline import Pipeline, node
 # Local import
 from pipelines.higgs.prepare.transform import tansform_raw_data
 from pipelines.higgs.fit.random_forest import select_and_fit_random_forest
+from pipelines.higgs.fit.xgboost import select_and_fit_xgboost
 
 
 def create_transform_pipeline() -> Pipeline:
@@ -25,6 +26,7 @@ def create_transform_pipeline() -> Pipeline:
                     "df_raw_test": "higgs_test_raw_data",
                     "index_col": "params:index_col",
                     "weight_col": "params:weight_col",
+                    "target_col": "params:target_col",
                     "l_cat_cols": "params:cat_col",
                     "l_num_cols": "params:num_col"
                 },
@@ -60,13 +62,32 @@ def create_fit_pipeline() -> Pipeline:
                     "param_transform": "params:param_transform",
                     "param_transform_grid": "params:param_transform_grid",
                     "params_fold": "params:param_fold",
-                    "scoring": "accuracy",
+                    "scoring": "params:higgs_scoring",
                 },
-                outputs=["higgs_train_transformed_data", "higgs_test_transformed_data", "higgs_weight_data"],
-                name="transform_higgs_data",
+                outputs=["rf_model", "rf_scores"],
+                tags=["higgs", "fit", 'rf'],
+                name="fit_random_forest",
+            ),
+            node(
+                select_and_fit_xgboost,
+                inputs={
+                    "df_train": "higgs_train_transformed_data",
+                    "df_weights": "higgs_weight_data",
+                    "l_cat_cols": "params:cat_col",
+                    "l_num_cols": "params:num_col",
+                    "target_col": "params:target_col",
+                    "param_mdl": "params:xgb_param",
+                    "param_mdl_grid": "params:xgb_param_grid",
+                    "param_transform": "params:param_transform",
+                    "param_transform_grid": "params:param_transform_grid",
+                    "params_fold": "params:param_fold",
+                    "scoring": "params:higgs_scoring",
+                },
+                outputs=["xgb_model", "xgb_scores"],
+                tags=["higgs", "fit", 'xgb'],
+                name="fit_xgboost",
             )
         ],
-        tags=["higgs", "transform"],
     )
 
 

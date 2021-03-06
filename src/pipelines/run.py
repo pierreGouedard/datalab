@@ -11,44 +11,46 @@ from dotenv import load_dotenv
 import logging
 
 # Local import
-from higgs import create_transform_pipeline  # type: ignore
+from pipelines.higgs import create_transform_pipeline  # type: ignore
+from pipelines.higgs import create_fit_pipeline  # type: ignore
 
 
-class ProjectContext(KedroContext):
+class DatalabContext(KedroContext):
     """Implement ``KedroContext``."""
 
-    project_name = "datalab-pipeline"
-    project_version = "0.16.1"  # Kedro version
-    package_name = "datalab"
+    project_name = "pipelines"
+    project_version = "0.17.1"  # Kedro version
+    package_name = "pipelines"
 
     def __init__(
         self,
+        package_name: str,
         project_path: Union[Path, str],
-        env: str = "staging.env",
+        env: str = "dev.env",
         extra_params: Dict[str, Any] = None,
-        only_missing: bool = True,
-        debug: bool = False,
     ):
 
-        super(ProjectContext, self).__init__(project_path=project_path, extra_params=extra_params)
+        super(DatalabContext, self).__init__(
+            package_name=package_name, project_path=project_path, extra_params=extra_params
+        )
 
         # Add local env file variables to global variables
         load_dotenv(dotenv_path=self._project_path / "conf" / "local" / env)
         logging.info(f"Env loaded")
 
-        # Instantiate the runner
-        self.runner = JaneRunner(only_missing=only_missing)
+        # here you can do common action like initialize sentry, log, tracing, ...
 
     def _get_pipelines(self) -> Dict[str, Pipeline]:
 
         higgs_transform = create_transform_pipeline()
+        higgs_fit = create_fit_pipeline()
 
         return {
-            "higgs": higgs_transform
+            "higgs": higgs_transform + higgs_fit
         }
 
 
-class JaneRunner(SequentialRunner):
+class DatalabRunner(SequentialRunner):
     """
     ``IncrementalRunner`` is a ``SequentialRunner`` implementation.
 
@@ -58,7 +60,7 @@ class JaneRunner(SequentialRunner):
 
     def __init__(self, only_missing: bool = True, is_async: bool = False):
         self.only_missing = only_missing
-        super(JaneRunner, self).__init__(is_async=is_async)
+        super(DatalabRunner, self).__init__(is_async=is_async)
 
     def run(self, pipeline: Pipeline, catalog: DataCatalog, run_id: str = None) -> Dict[str, Any]:
         """
@@ -86,4 +88,4 @@ class JaneRunner(SequentialRunner):
             to_build = {ds for ds in catalog.list() if not catalog.exists(ds)}.intersection(pipeline.data_sets())
             pipeline = pipeline.only_nodes_with_outputs(*to_build) + pipeline.from_inputs(*to_build)
 
-        return super(JaneRunner, self).run(pipeline, catalog, run_id)
+        return super(DatalabRunner, self).run(pipeline, catalog, run_id)

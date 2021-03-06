@@ -20,3 +20,19 @@ higgs_test_transformed_data:
 higgs_weight_data:
   type: pandas.CSVDataSet
   filepath: data/higgs/feature/weights.csv
+
+rf_model:
+  type: pickle.PickleDataSet
+  filepath: data/higgs/models/rf.pickle
+
+rf_scores:
+  type: json.JSONDataSet
+  filepath: data/higgs/models/rf_scores.json
+
+xgb_model:
+  type: pickle.PickleDataSet
+  filepath: data/higgs/models/xgb.pickle
+
+xgb_scores:
+  type: json.JSONDataSet
+  filepath: data/higgs/models/xgb_scores.json

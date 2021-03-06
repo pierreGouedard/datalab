@@ -3,9 +3,10 @@ from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
 import numpy as np
 from scipy.sparse import csc_matrix
 from sklearn.preprocessing import LabelEncoder
+from pandas import concat
 
 # Local import
-from src.model.helpers.encoder import HybridEncoder, CatEncoder
+from datalab.dataops.utils.encoder import HybridEncoder, CatEncoder
 
 
 class FoldManager(object):
@@ -53,6 +54,41 @@ class FoldManager(object):
     def reset(self):
         self.data_transformer = None
 
+    def get_all_train_data(self, param_transform, force_recompute=False):
+        """
+        Build a data set composed of models. The target is also return, if specified.
+
+        Parameters
+        ----------
+        param_transform : dict
+            kw parameters to build features.
+
+        force_recompute : bool
+            If True, it fit feature builder with train data
+
+        Returns
+        -------
+        dict
+
+        """
+        # concat train and validation if any
+        if self.df_val is not None:
+            df_train = concat([self.df_train, self.df_val])
+        else:
+            df_train = self.df_train
+
+        # Create models builder if necessary
+        if self.data_transformer is None or force_recompute:
+            self.data_transformer = DataTransformer(**param_transform).build(df_train)
+
+        X, y = self.data_transformer.transform(df_train, target=True)
+        d_train = {"X": X, "y": y}
+
+        if self.df_weights is not None:
+            return {**d_train, "w": self.df_weights.loc[self.df_train.index].values}
+
+        return d_train
+
     def get_train_data(self, param_transform, force_recompute=False):
         """
         Build a data set composed of models. The target is also return, if specified.
@@ -96,7 +132,7 @@ class FoldManager(object):
         dict
 
         """
-        if not self.df_val is None:
+        if self.df_val is None:
             return None
 
         # Create models builder if necessary
@@ -217,11 +253,9 @@ class DataTransformer(object):
             Model to use to transform text data.
 
         """
-        self.feature_transform, self.target_col, self.cat_cols, self.num_cols = feature_transform, target_col, cat_cols, num_cols
-        self.n_label = n_label
-        self.target_transform = target_transform,
-        self.params = params
-        self.args = {}
+        self.n_label, self.target_col, self.cat_cols, self.num_cols = n_label , target_col, cat_cols, num_cols
+        self.feature_transform, self.target_transform = feature_transform, target_transform
+        self.params, self.args = params, {}
         self.model, self.target_encoder, self.is_built = None, None, None
 
     def get_args(self):
@@ -246,7 +280,6 @@ class DataTransformer(object):
         -------
         self : Current instance of the class.
         """
-
         if self.model is None or force_train:
 
             if self.feature_transform == 'cat_encode':
@@ -285,7 +318,6 @@ class DataTransformer(object):
             Transformed data.
 
         """
-
         if not self.is_built:
             raise ValueError("Transforming data requires building features.")
 

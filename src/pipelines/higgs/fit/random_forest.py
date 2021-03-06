@@ -1,7 +1,7 @@
 # Global import
 
 # Local import
-from datalab.dataops.ml_operations.clf_model import ClfSelector, Classifier
+from datalab.dataops.ml_operations.clf_model import ClfSelector
 
 
 def select_and_fit_random_forest(
@@ -48,15 +48,4 @@ def select_and_fit_random_forest(
     classifier = cs.fit().save_classifier(model_path).get_classifier()
     _, _, d_scores = classifier.evaluate(cs.fold_manager.df_train, cs.fold_manager.df_test)
 
-    # # Compute submission ? Now ?
-    # df_submission = classifier.predict(cs.fold_manager.df_test)\
-    #     .to_frame('Class')\
-    #     .assign(
-    #         Class=lambda x: classifier.feature_builder.target_encoder.inverse_transform(x.Class),
-    #         RankOrder=lambda x: range(len(x))
-    #     )\
-    #     .reset_index()\
-    #     .loc[:, ['EventId', 'RankOrder', 'Class']]\
-    #     .to_csv(submission_path, index=None)
-
-
+    return classifier, d_scores

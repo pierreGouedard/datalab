@@ -38,16 +38,19 @@ num_col:
   - PRI_jet_subleading_phi
   - PRI_jet_all_pt
 
+# Evaluation metric
+higgs_scoring: accuracy
+
 # Feature transform param
 param_transform:
   params:
     sparse: False
     dtype: int
   feature_transform: cat_encode
-  target_transform: target_transform
+  target_transform: encoding
   n_label: 1
 
-param_transform_grid:
+param_transform_grid: {}
 
 # Selection param (CV / test / val)
 param_fold:
@@ -59,7 +62,7 @@ param_fold:
 # Random forest params
 rf_param:
   n_jobs: 2
-  min_samples_split': 100
+  min_samples_leaf: 100
   max_depth: 5
   n_estimators: 200
 

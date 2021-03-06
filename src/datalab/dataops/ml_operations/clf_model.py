@@ -1,6 +1,6 @@
 # Global imports
-import logging
 import itertools
+import logging
 import pandas as pd
 import numpy as np
 import dill as pickle
@@ -17,8 +17,6 @@ from typing import Dict, Any, Optional
 # Local import
 from datalab.dataops.utils.names import KVName
 from datalab.dataops.ml_operations.features import FoldManager
-
-logging.getLogger().setLevel(logging.INFO)
 
 
 class ClfSelector(object):
@@ -163,7 +161,7 @@ class ClfSelector(object):
                 if 'input_shape' in args.keys():
                     args['input_shape'] = d_train['X'].shape[1]
 
-                if 'w' in d_train.keys():
+                if 'w' in d_train.keys() and self.weight_arg is not None:
                     args[self.weight_arg] = d_train['w']
 
                 model.fit(d_train['X'], d_train['y'], **args)
@@ -195,7 +193,7 @@ class ClfSelector(object):
         # Recover optimal parameters
         d_feature_params = self.d_search[self.d_search['best_key']]['params_feature']
         d_model_params = self.d_search[self.d_search['best_key']]['param_mdl']
-        d_train = self.fold_manager.get_train_data(d_feature_params)
+        d_train = self.fold_manager.get_all_train_data(d_feature_params)
 
         # Instantiate model and fit it
         model, kwargs = get_model(self.param_transform, d_model_params)

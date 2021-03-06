@@ -29,6 +29,9 @@
 Command line tools for manipulating a Kedro project.
 
 Intended to be invoked via `kedro`.
+
+To visualize project prompt kedro viz -e dev.env
+
 """
 # mypy: allow-untyped-defs, allow-untyped-calls, no-strict-optional, ignore-errors
 import os
@@ -42,9 +45,10 @@ from kedro.framework.cli.jupyter import jupyter as jupyter_group
 from kedro.framework.cli.pipeline import pipeline as pipeline_group
 from kedro.framework.cli.project import project_group
 from kedro.framework.cli.utils import split_string
-from kedro.framework.context import load_context
+from kedro.framework.session import KedroSession
 
-# Prevent datadog to setup logs before kedro load log settings
+# Local import
+from .run import DatalabRunner
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -74,6 +78,8 @@ example: param1:value1,param2:value2. Each parameter is split by the first comma
 so parameter values are allowed to contain colons, parameter keys are not."""
 ENV_HELP = """Environment name. Defaults to `staging.env`."""
 MISSING_HELP = """Specify whether to run only nodes where output is missing"""
+ASYNC_ARG_HELP = """Load and save node inputs and outputs asynchronously
+with threads. If not specified, load and save datasets synchronously."""
 DEBUG_HELP = """Specify whether to run in debug mode (no DB save) nodes."""
 
 
@@ -129,21 +135,25 @@ def cli():
 @click.option("--pipeline", type=str, default=None, help=PIPELINE_ARG_HELP)
 @click.option("--debug", type=bool, multiple=False, default=False, help=DEBUG_HELP)
 @click.option("--params", type=str, default="", help=PARAMS_ARG_HELP, callback=_split_params)
-@click.option("--only-missing", "-m", type=bool, multiple=False, default=False, help=MISSING_HELP)
-def run(tag, env, node_names, to_nodes, from_nodes, from_inputs, pipeline, debug, params, only_missing):
+@click.option("--only-missing", "-m", is_flag=True, multiple=False, help=MISSING_HELP)
+@click.option("--async", "is_async", is_flag=True, multiple=False, help=ASYNC_ARG_HELP)
+def run(tag, env, node_names, to_nodes, from_nodes, from_inputs, pipeline, debug, params, only_missing, is_async):
     """Run the pipeline."""
+    runner = DatalabRunner(only_missing, is_async)
     tag = _get_values_as_tuple(tag) if tag else tag
     node_names = _get_values_as_tuple(node_names) if node_names else node_names
-    context = load_context(Path.cwd(), env=env, extra_params=params, debug=debug, only_missing=only_missing)
-    context.run(
-        tags=tag,
-        runner=context.runner,
-        node_names=node_names,
-        from_nodes=from_nodes,
-        to_nodes=to_nodes,
-        from_inputs=from_inputs,
-        pipeline_name=pipeline,
-    )
+    package_name = str(Path(__file__).resolve().parent.name)
+
+    with KedroSession.create(package_name, env=env, extra_params=params) as session:
+        session.run(
+            tags=tag,
+            runner=runner,
+            node_names=node_names,
+            from_nodes=from_nodes,
+            to_nodes=to_nodes,
+            from_inputs=from_inputs,
+            pipeline_name=pipeline,
+        )
 
 
 cli.add_command(pipeline_group)

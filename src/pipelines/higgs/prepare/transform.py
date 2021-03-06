@@ -8,8 +8,8 @@ from typing import List, Tuple, Optional
 
 
 def tansform_raw_data(
-        df_raw_train: pd.DataFrame, df_raw_test: pd.DataFrame, index_col: str, weight_col:str, l_cat_cols: List[str],
-        l_num_cols: List[str]
+        df_raw_train: pd.DataFrame, df_raw_test: pd.DataFrame, index_col: str, weight_col: str, target_col: str,
+        l_cat_cols: List[str], l_num_cols: List[str]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Transform raw data of the Kaggle Higgs dataset.
@@ -47,9 +47,10 @@ def tansform_raw_data(
 
     # Process train raw data
     df_train, scaler, l_filtered_num_cols = process_raw(
-        df_raw_train[l_cat_cols + l_num_cols],
+        df_raw_train[l_cat_cols + l_num_cols + [target_col]],
         l_col_cats=l_cat_cols,
         l_num_cols=l_num_cols,
+        target_col=target_col,
         missing_value=-999,
     )
 
@@ -67,9 +68,9 @@ def tansform_raw_data(
 
 
 def process_raw(
-        df: pd.DataFrame, l_col_cats: List[str], l_num_cols: List[str], missing_value: int = None,
-        scaler: Optional[StandardScaler] = None, l_filtered_num_cols: Optional[List[str]] = None,
-        corr_thresh: Optional[float] = 0.95
+        df: pd.DataFrame, l_col_cats: List[str], l_num_cols: List[str], target_col: Optional[str] = None,
+        missing_value: Optional[int] = None, scaler: Optional[StandardScaler] = None,
+        l_filtered_num_cols: Optional[List[str]] = None, corr_thresh: Optional[float] = 0.95
 ) -> Tuple[pd.DataFrame, StandardScaler, List[str]]:
     """
     Process DataFrame.
@@ -83,8 +84,10 @@ def process_raw(
         DataFrame to process.
     l_col_cats: list
         list of categrical columns.
-    l_num_cols:
+    l_num_cols: list
         list of numerical columns.
+    target_col: str
+        Name of the target column.
     missing_value: int
         Value that take missing value in passed DataFrame.
     scaler: StandardScaler
@@ -117,14 +120,17 @@ def process_raw(
     df = df.assign(**{c: ax_standardize[:, i] for i, c in enumerate(l_num_cols)})
 
     # Remove too correlated features
-    if l_filtered_num_cols is not None:
+    if l_filtered_num_cols is None:
         df_corr = df[l_num_cols].corr()
         l_filtered_num_cols = [df_corr.index[0]]
-        for i in range(1, df_corr.shape[0] + 1):
-            if (df_corr.iloc[28].abs() > corr_thresh).iloc[:i].sum() == 0:
-                l_filtered_num_cols.append(df_corr.index[0])
+        for i in range(1, df_corr.shape[0]):
+            if (df_corr.iloc[i].abs() > corr_thresh).iloc[:i].sum() == 0:
+                l_filtered_num_cols.append(df_corr.index[i])
 
-    # Filter cols of
-    df = df[l_col_cats + l_num_cols]
+    # Gather selected cols
+    if target_col is not None:
+        l_cols = l_col_cats + l_filtered_num_cols + [target_col]
+    else:
+        l_cols = l_col_cats + l_filtered_num_cols
 
-    return df, scaler, l_filtered_num_cols
+    return df[l_cols], scaler, l_filtered_num_cols
