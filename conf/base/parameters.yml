@@ -41,17 +41,6 @@ num_col:
 # Evaluation metric
 higgs_scoring: accuracy
 
-# Feature transform param
-param_transform:
-  params:
-    sparse: False
-    dtype: int
-  feature_transform: cat_encode
-  target_transform: encoding
-  n_label: 1
-
-param_transform_grid: {}
-
 # Selection param (CV / test / val)
 param_fold:
   nb_folds: 0
@@ -60,6 +49,23 @@ param_fold:
   val_size: 0.05
 
 # Random forest params
+param_rf_transform:
+  params:
+    sparse: False
+    dtype: int
+    impute_cat:
+      missing_values: .NAN
+      strategy: constant
+      fill_value: -1
+    impute_num:
+      missing_values: .NAN
+      strategy: mean
+  feature_transform: cat_encode,impute
+  target_transform: encoding
+  n_label: 1
+
+param_rf_transform_grid: {}
+
 rf_param:
   n_jobs: 2
   min_samples_leaf: 100
@@ -83,6 +89,16 @@ rf_param_grid:
 
 # XGBOOST params: eta: learning rate, gamma: min reduction loss to split, subsample: p dataset sampled,
 # colsample_bytree: p col sampling, lambda: L2 reg coef, alpha: L1 reg coef
+param_xgb_transform:
+  params:
+    sparse: False
+    dtype: int
+  feature_transform: cat_encode
+  target_transform: encoding
+  n_label: 1
+
+param_xgb_transform_grid: {}
+
 xgb_param:
   nthread: 2
   n_jobs: 2

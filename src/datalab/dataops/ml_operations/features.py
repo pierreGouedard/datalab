@@ -3,6 +3,7 @@ from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
 import numpy as np
 from scipy.sparse import csc_matrix
 from sklearn.preprocessing import LabelEncoder
+from sklearn.impute import SimpleImputer
 from pandas import concat
 
 # Local import
@@ -256,7 +257,9 @@ class DataTransformer(object):
         self.n_label, self.target_col, self.cat_cols, self.num_cols = n_label , target_col, cat_cols, num_cols
         self.feature_transform, self.target_transform = feature_transform, target_transform
         self.params, self.args = params, {}
-        self.model, self.target_encoder, self.is_built = None, None, None
+
+        # Init model to None
+        self.model, self.target_encoder, self.imputer = None, None, None
 
     def get_args(self):
         return {k: v for k, v in self.args.items()}
@@ -282,20 +285,25 @@ class DataTransformer(object):
         """
         if self.model is None or force_train:
 
-            if self.feature_transform == 'cat_encode':
+            if 'impute' in self.feature_transform:
+                self.imputer = {
+                    'cat_imput': SimpleImputer(**self.params.get('impute_cat', {})).fit(df_data[self.cat_cols]),
+                    'num_imput': SimpleImputer(**self.params.get('impute_num', {})).fit(df_data[self.num_cols])
+                }
+
+            if "cat_encode" in self.feature_transform:
                 self.model = CatEncoder(
                     handle_unknown='ignore', sparse=self.params.get('sparse', False),
                     dtype=self.params.get('dtype', bool)
                 )
                 self.model.fit(df_data[self.cat_cols])
 
+
             else:
                 raise ValueError('Transformation not implemented: {}'.format(self.feature_transform))
 
             if self.target_transform in ('encoding', 'sparse_encoding'):
                 self.target_encoder = LabelEncoder().fit(df_data[self.target_col])
-
-        self.is_built = True
 
         return self
 
@@ -318,15 +326,17 @@ class DataTransformer(object):
             Transformed data.
 
         """
-        if not self.is_built:
-            raise ValueError("Transforming data requires building features.")
-
-        if self.feature_transform == 'cat_encode':
-            X = self.model.transform(df_data[self.cat_cols])
-            X = np.hstack((X, df_data[[c for c in self.num_cols if c != self.target_col]]))
+        if 'impute' in self.feature_transform:
+            X_cat = self.imputer['cat_imput'].transform(df_data[self.cat_cols])
+            X_num = self.imputer['num_imput'].transform(df_data[self.num_cols])
 
         else:
-            X = df_data[[c for c in df_data.columns if c != self.target_col]].values
+            X_cat, X_num = df_data[self.cat_cols], df_data[self.num_cols]
+
+        if self.feature_transform == 'cat_encode':
+            X_cat = self.model.transform(X_cat)
+
+        X = np.hstack([X_cat, X_num])
 
         if target:
             if self.target_transform == 'encoding':

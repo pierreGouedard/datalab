@@ -191,28 +191,18 @@ class ClfSelector(object):
         self.fold_manager.reset()
 
         # Recover optimal parameters
-        d_feature_params = self.d_search[self.d_search['best_key']]['params_feature']
+        d_transform_param = self.d_search[self.d_search['best_key']]['params_feature']
         d_model_params = self.d_search[self.d_search['best_key']]['param_mdl']
-        d_train = self.fold_manager.get_all_train_data(d_feature_params)
+        d_train = self.fold_manager.get_all_train_data(d_transform_param)
 
         # Instantiate model and fit it
         model, kwargs = get_model(self.param_transform, d_model_params)
-        d_eval = self.fold_manager.get_eval_data(d_feature_params)
 
         if 'input_shape' in kwargs.keys():
             kwargs['input_shape'] = d_train['X'].shape[1]
 
-        if d_train.get('w', None) is not None:
+        if d_train.get('w', None) is not None and self.weight_arg is not None:
             kwargs[self.weight_arg] = d_train['w']
-
-        if d_train.get('s', None) is not None:
-            kwargs[self.scoring_arg] = d_train['s']
-
-        if 'args' in d_feature_params.keys():
-            kwargs.update({arg: d_train[arg] for arg in d_feature_params['args']})
-
-        if d_eval is not None:
-            kwargs['eval_set'] = d_eval
 
         model.fit(d_train['X'], d_train['y'], **kwargs)
 
@@ -339,36 +329,13 @@ class Classifier(object):
 
         """
         features = self.data_transformer.transform(df)
-        preds = self.model.predict_proba_new(features, **kwargs)
+        preds = self.model.predict_proba(features, **kwargs)
 
         if self.data_transformer.target_transform == 'sparse_encoding':
             df_probas = pd.DataFrame(
                 preds, index=df.index, columns=self.data_transformer.target_encoder.classes_[-kwargs['n_label']:]
             )
             return df_probas.fillna(0)
-
-        return pd.DataFrame(preds, index=df.index, columns=self.data_transformer.target_encoder.classes_)
-
-    def predict_score(self, df, **kwargs):
-        """
-        Predict probabilities over target space for feature in df.
-
-        Parameters
-        ----------
-        df : pandas.DataFrame
-
-        Returns
-        -------
-
-        """
-        features = self.data_transformer.transform(df)
-        preds = self.model.predict_score(features, **kwargs)
-
-        if self.data_transformer.target_transform == 'sparse_encoding':
-            df_probas = pd.DataFrame(
-                preds, index=df.index, columns=self.data_transformer.target_encoder.classes_[-kwargs['n_label']:]
-            )
-            return df_probas
 
         return pd.DataFrame(preds, index=df.index, columns=self.data_transformer.target_encoder.classes_)
 

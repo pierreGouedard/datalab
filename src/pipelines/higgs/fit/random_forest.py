@@ -45,7 +45,7 @@ def select_and_fit_random_forest(
         scoring=scoring
     )
 
-    classifier = cs.fit().save_classifier(model_path).get_classifier()
+    classifier = cs.fit().self.get_classifier()
     _, _, d_scores = classifier.evaluate(cs.fold_manager.df_train, cs.fold_manager.df_test)
 
     return classifier, d_scores
