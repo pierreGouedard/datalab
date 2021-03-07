@@ -34,7 +34,7 @@ def select_and_fit_random_forest(
     param_transform['target_col'] = target_col
 
     cs = ClfSelector(
-        df_data=df_train,
+        df_data=df_train[param_transform['cat_cols'] + param_transform['num_cols']],
         df_weights=df_weights,
         model_name='rf',
         param_mdl=param_mdl,
@@ -45,7 +45,7 @@ def select_and_fit_random_forest(
         scoring=scoring
     )
 
-    classifier = cs.fit().self.get_classifier()
+    classifier = cs.fit().get_classifier()
     _, _, d_scores = classifier.evaluate(cs.fold_manager.df_train, cs.fold_manager.df_test)
 
     return classifier, d_scores

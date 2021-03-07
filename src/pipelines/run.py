@@ -13,6 +13,7 @@ import logging
 # Local import
 from pipelines.higgs import create_transform_pipeline  # type: ignore
 from pipelines.higgs import create_fit_pipeline  # type: ignore
+from pipelines.higgs import create_submit_pipeline  # type: ignore
 
 
 class DatalabContext(KedroContext):
@@ -44,9 +45,10 @@ class DatalabContext(KedroContext):
 
         higgs_transform = create_transform_pipeline()
         higgs_fit = create_fit_pipeline()
+        higgs_submit = create_submit_pipeline()
 
         return {
-            "higgs": higgs_transform + higgs_fit
+            "higgs": higgs_transform + higgs_fit + higgs_submit
         }
 
 

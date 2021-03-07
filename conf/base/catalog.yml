@@ -12,10 +12,14 @@ higgs_test_raw_data:
 higgs_train_transformed_data:
   type: pandas.CSVDataSet
   filepath: data/higgs/feature/train.csv
+  save_args:
+    index: True
 
 higgs_test_transformed_data:
   type: pandas.CSVDataSet
   filepath: data/higgs/feature/test.csv
+  save_args:
+    index: True
 
 higgs_weight_data:
   type: pandas.CSVDataSet

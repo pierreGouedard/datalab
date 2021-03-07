@@ -6,6 +6,7 @@ from kedro.pipeline import Pipeline, node
 from pipelines.higgs.prepare.transform import tansform_raw_data
 from pipelines.higgs.fit.random_forest import select_and_fit_random_forest
 from pipelines.higgs.fit.xgboost import select_and_fit_xgboost
+from pipelines.higgs.submit.submit import send_rf_submission, send_xgb_submission
 
 
 def create_transform_pipeline() -> Pipeline:
@@ -86,6 +87,37 @@ def create_fit_pipeline() -> Pipeline:
                 outputs=["xgb_model", "xgb_scores"],
                 tags=["higgs", "fit", 'xgb'],
                 name="fit_xgboost",
+            )
+        ],
+    )
+
+
+def create_submit_pipeline() -> Pipeline:
+    return Pipeline(
+        [
+            node(
+                send_rf_submission,
+                inputs={
+                    "clf_rf": "rf_model",
+                    "df_test": "higgs_test_transformed_data",
+                    "index_col": "params:index_col",
+                    "threshold": "params:higgs_proba_threshold",
+                },
+                outputs=[],
+                tags=["higgs", "submit", 'rf'],
+                name="submit_random_forest",
+            ),
+            node(
+                send_xgb_submission,
+                inputs={
+                    "clf_xgb": "xgb_model",
+                    "df_test": "higgs_test_transformed_data",
+                    "index_col": "params:index_col",
+                    "threshold": "params:higgs_proba_threshold",
+                },
+                outputs=[],
+                tags=["higgs", "submit", 'xgb'],
+                name="submit_xgboost",
             )
         ],
     )

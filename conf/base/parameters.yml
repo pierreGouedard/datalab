@@ -38,10 +38,9 @@ num_col:
   - PRI_jet_subleading_phi
   - PRI_jet_all_pt
 
-# Evaluation metric
+# Selection param (CV / test / val)
 higgs_scoring: accuracy
 
-# Selection param (CV / test / val)
 param_fold:
   nb_folds: 0
   method: standard
@@ -67,23 +66,20 @@ param_rf_transform:
 param_rf_transform_grid: {}
 
 rf_param:
-  n_jobs: 2
+  n_jobs: 4
   min_samples_leaf: 100
   max_depth: 5
   n_estimators: 200
 
 rf_param_grid:
   min_samples_leaf:
-    - 50
     - 100
     - 500
     - 1000
   max_depth:
-    - 3
-    - 5
     - 10
+    - 15
   n_estimators:
-    - 100
     - 250
     - 500
 
@@ -100,16 +96,16 @@ param_xgb_transform:
 param_xgb_transform_grid: {}
 
 xgb_param:
-  nthread: 2
+  nthread: 4
   n_jobs: 2
   objective: binary:logistic
-  colsample_bytree': 0.8
-  subsample': 0.8
+  colsample_bytree: 0.8
+  subsample: 0.8
   eta: 0.1
   max_depth: 10
   alpha: 0
   lambda: 0
-  min_child_leaf: 100
+  min_child_weight: 100
   gamma: 1
   n_estimators: 100
 
@@ -117,26 +113,29 @@ xgb_param_grid:
   colsample_bytree:
     - 0.5
     - 0.8
-    - 1
   subsample:
     - 0.5
     - 0.8
-    - 1
   eta:
     - 0.05
     - 0.1
-    - 0.2
   max_depth:
-    - 3
     - 5
     - 10
+    - 15
   lambda:
     - 0.01
     - 0.1
-    - 0.5
   n_estimators:
-    - 100
     - 300
     - 600
+  min_child_weight:
+    - 100
+    - 500
+    - 1000
 
 # DL params
+
+
+# Submission
+higgs_proba_threshold: 0.15

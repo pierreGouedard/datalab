@@ -47,7 +47,7 @@ def select_and_fit_xgboost(
     param_transform['target_col'] = target_col
 
     cs = ClfSelector(
-        df_data=df_train,
+        df_data=df_train[param_transform['cat_cols'] + param_transform['num_cols']],
         df_weights=df_weights,
         model_name='xgb',
         param_mdl=param_mdl,
@@ -58,16 +58,7 @@ def select_and_fit_xgboost(
         scoring=scoring
     )
 
-    classifier = cs.fit().save_classifier(model_path).get_classifier()
+    classifier = cs.fit().get_classifier()
     _, _, d_scores = classifier.evaluate(cs.fold_manager.df_train, cs.fold_manager.df_test)
 
-    # Compute submission ? Now ?
-    # df_submission = classifier.predict(cs.fold_manager.df_test) \
-    #                     .to_frame('Class') \
-    #                     .assign(
-    #     Class=lambda x: classifier.feature_builder.target_encoder.inverse_transform(x.Class),
-    #     RankOrder=lambda x: range(len(x))
-    # ) \
-    #                     .reset_index() \
-    #                     .loc[:, ['EventId', 'RankOrder', 'Class']] \
-    #     .to_csv(submission_path, index=None)
+    return classifier, d_scores

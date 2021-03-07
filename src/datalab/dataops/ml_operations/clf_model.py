@@ -196,7 +196,7 @@ class ClfSelector(object):
         d_train = self.fold_manager.get_all_train_data(d_transform_param)
 
         # Instantiate model and fit it
-        model, kwargs = get_model(self.param_transform, d_model_params)
+        model, kwargs = get_model(self.model_name, d_model_params)
 
         if 'input_shape' in kwargs.keys():
             kwargs['input_shape'] = d_train['X'].shape[1]
@@ -316,7 +316,7 @@ class Classifier(object):
 
         return pd.Series(preds, index=df.index, name="prediction")
 
-    def predict_proba(self, df, **kwargs):
+    def predict_proba(self, df):
         """
         Predict probabilities over target space for feature in df.
 
@@ -329,14 +329,7 @@ class Classifier(object):
 
         """
         features = self.data_transformer.transform(df)
-        preds = self.model.predict_proba(features, **kwargs)
-
-        if self.data_transformer.target_transform == 'sparse_encoding':
-            df_probas = pd.DataFrame(
-                preds, index=df.index, columns=self.data_transformer.target_encoder.classes_[-kwargs['n_label']:]
-            )
-            return df_probas.fillna(0)
-
+        preds = self.model.predict_proba(features)
         return pd.DataFrame(preds, index=df.index, columns=self.data_transformer.target_encoder.classes_)
 
     def evaluate(self, df_train, df_test):
