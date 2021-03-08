@@ -74,7 +74,7 @@ def send_submission(clf, df_test, d_model):
     # Write submission in tmp dir
     driver = FileDriver('file_driver', "send submission to kaggle")
     tmp_file = driver.TempFile(prefix='kggl_higgs_', suffix='.csv')
-    df_probas.to_csv(tmp_file.path)
+    df_probas.to_csv(tmp_file.path, index=None)
 
     # Send submission using kaggle API
     bash = f'kaggle competitions submit -c higgs-boson -f "{tmp_file.path}" -m "{name_submission}"'

@@ -103,7 +103,7 @@ def create_submit_pipeline() -> Pipeline:
                     "index_col": "params:index_col",
                     "threshold": "params:higgs_proba_threshold",
                 },
-                outputs=[],
+                outputs=None,
                 tags=["higgs", "submit", 'rf'],
                 name="submit_random_forest",
             ),
@@ -115,7 +115,7 @@ def create_submit_pipeline() -> Pipeline:
                     "index_col": "params:index_col",
                     "threshold": "params:higgs_proba_threshold",
                 },
-                outputs=[],
+                outputs=None,
                 tags=["higgs", "submit", 'xgb'],
                 name="submit_xgboost",
             )

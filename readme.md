@@ -3,6 +3,11 @@
 [![Black][black-image]][black-url]
 [![codecov][codecov-image]][codecov-url]
 
+### Intro
+
+This project is intended to gather all the good practice of data science module building that I have learnt in my 
+previous experience 
+
 ### Onboarding
 
 Create virtual env and install janeml module
