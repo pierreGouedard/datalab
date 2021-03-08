@@ -47,7 +47,7 @@ def select_and_fit_xgboost(
     param_transform['target_col'] = target_col
 
     cs = ClfSelector(
-        df_data=df_train[param_transform['cat_cols'] + param_transform['num_cols']],
+        df_data=df_train[param_transform['cat_cols'] + param_transform['num_cols'] + [target_col]],
         df_weights=df_weights,
         model_name='xgb',
         param_mdl=param_mdl,
